@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -18,25 +19,32 @@ public class DBScan {
 
     public ArrayList<ArrayList<ArrayList<Double>>> findClusters() {
         for (ArrayList<Double> point : points) {
-            if (!visited.contains(point)) {
-                explore(point);
+            if (!isVisited(point)) {
+                explore(point, true);
             }
         }
 
         return clusters;
     }
 
-    void explore(ArrayList<Double> point) {
+    boolean isVisited(ArrayList<Double> point) {
+        return visited.contains(point);
+    }
+
+    void explore(ArrayList<Double> point, boolean addCluster) {
         visited.add(point);
         ArrayList<ArrayList<Double>> neighbors = findNeighbors(point);
         if (isCorePoint(point)) {
-            ArrayList<ArrayList<Double>> cluster = new ArrayList<>(neighbors);
-            cluster.add(point);
-            clusters.add(cluster);
+
+            if (addCluster) {
+                ArrayList<ArrayList<Double>> cluster = new ArrayList<>(neighbors);
+                cluster.add(point);
+                clusters.add(cluster);
+            }
 
             for (ArrayList<Double> neighbor : neighbors) {
-                if (isCorePoint(neighbor) && !visited.contains(neighbor)) {
-                    explore(neighbor);
+                if (isCorePoint(neighbor) && !isVisited(neighbor)) {
+                    explore(neighbor, false);
                 } else {
                     visited.add(neighbor);
                 }
@@ -71,5 +79,43 @@ public class DBScan {
         }
 
         return Math.sqrt(L2Norm);
+    }
+
+    void saveClustersToCSV(String filename) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
+            int numFeatures = clusters.get(0).get(0).size();
+
+            StringBuilder header = new StringBuilder();
+            for (int featureNum = 1; featureNum <= numFeatures; featureNum++) {
+                header.append("feature").append(featureNum);
+                if (featureNum < numFeatures) {
+                    header.append(",");
+                }
+            }
+            header.append(",cluster");
+            bw.write(header.toString());
+            bw.newLine();
+
+            for (int clusterIndex = 0; clusterIndex < clusters.size(); clusterIndex++) {
+                ArrayList<ArrayList<Double>> cluster = clusters.get(clusterIndex);
+
+                for (ArrayList<Double> point : cluster) {
+                    StringBuilder row = new StringBuilder();
+                    for (int i = 0; i < point.size(); i++) {
+                        row.append(point.get(i));
+                        if (i < point.size() - 1) {
+                            row.append(",");
+                        }
+                    }
+                    row.append(",").append(clusterIndex);
+                    bw.write(row.toString());
+                    bw.newLine();
+                }
+            }
+
+            System.out.println("Wrote " + filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
