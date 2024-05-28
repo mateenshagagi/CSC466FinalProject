@@ -28,3 +28,39 @@ Optimizer class?
 Iterates over epsilon and minPts to find optimal clusters
 
 Data visualization 
+
+
+Distance function:
+L2 norm
+
+Something to keep track of visited points
+
+def explore(a, visted_points, clusters):
+    add a to visited
+    
+    neighbors = find neighbors(pt)
+    if # neighbors >= min points:
+        create cluster with neighbors
+        for each neighbor:
+         if neighbor is core point:
+            explore neighbor
+        else:
+            neighbor is edge point
+            mark neighbor as visited
+    else:
+        label point a as noise
+
+def DBScan():
+    visited_points = ()
+    clusters = []
+    while points that havent been visited:
+        pick random point a
+        explore a
+
+find neighbors (epsilon, pt):
+    neighbors = []
+    for each pt in points:
+        distance = L2norm
+        if distance <= epsilon:
+            add to neighbors
+    return neighbors
