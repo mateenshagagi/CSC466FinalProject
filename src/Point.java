@@ -29,6 +29,17 @@ public class Point {
         return this.data.get(i);
     }
 
+    public void remove(int i){
+        this.data.remove(i);
+    }
+
+    @Override
+    public String toString() {
+        return "Point{" +
+                "data=" + data +
+                '}';
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

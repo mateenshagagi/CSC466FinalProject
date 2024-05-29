@@ -5,11 +5,17 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        ArrayList<Point> points = parseDataset("src/dataset.csv");
+        ArrayList<Point> points = parseDataset("src/Mall_Customers.csv");
 
-        DBScan dbScan = new DBScan(points, 0.3, 10);
+        for(Point p : points){
+            p.remove(0);
+        }
+
+        System.out.println(points);
+
+        DBScan dbScan = new DBScan(points, 10, 10);
         dbScan.findClusters();
-        dbScan.saveClustersToCSV("src/clusters.csv");
+        dbScan.saveClustersToCSV("src/customers_clusters.csv");
     }
 
     public static ArrayList<Point> parseDataset(String filename) {
@@ -19,12 +25,18 @@ public class Main {
             File file = new File(filename);
             Scanner scanner = new Scanner(file);
 
+            scanner.nextLine();
+
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 String[] values = line.split(",");
                 Point point = new Point();
                 for (String value : values) {
-                    point.add(Double.parseDouble(value.trim()));
+                    try{
+                        point.add(Double.parseDouble(value.trim()));
+                    } catch (NumberFormatException e){
+                        continue;
+                    }
                 }
                 points.add(point);
             }

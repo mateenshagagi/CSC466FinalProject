@@ -8,6 +8,13 @@ https://www.kaggle.com/datasets/uciml/red-wine-quality-cortez-et-al-2009
 
 https://towardsdatascience.com/part-2-gradient-descent-and-backpropagation-bf90932c066a
 
+TODO:
+1. Label core/noise/edge points (maybe using opacity)
+2. Evaluator
+3. 3d graphs
+4. Presentation
+
+
 DBScan class
 - take data -> output clusters
 - parameters epsilon and minPts

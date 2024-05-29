@@ -2,6 +2,19 @@ import matplotlib.pyplot
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import plotly.express as px
+
+
+def plot3d(filename):
+
+  df = pd.read_csv(filename)
+  print(df)
+  cluster_column = df.columns[-1]
+    
+  clusters = df[cluster_column].unique()
+  fig = px.scatter_3d(df, x='feature1', y='feature2', z='feature3', color='cluster')
+  fig.show()
+
 
 def read_and_plot_clusters(filename):
     df = pd.read_csv(filename)
@@ -25,5 +38,5 @@ def read_and_plot_clusters(filename):
 
 
 if __name__ == '__main__':
-  filename = 'clusters.csv'
-  read_and_plot_clusters(filename)
+  filename = 'customers_clusters.csv'
+  plot3d(filename)
