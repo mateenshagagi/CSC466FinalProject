@@ -3,7 +3,7 @@ import java.util.Objects;
 
 public class Point {
 
-    private ArrayList<Double> data;
+    private final ArrayList<Double> data;
 
     public Point(){
         this.data = new ArrayList<>();
@@ -27,10 +27,6 @@ public class Point {
 
     public double get(int i){
         return this.data.get(i);
-    }
-
-    public void remove(int i){
-        this.data.remove(i);
     }
 
     @Override

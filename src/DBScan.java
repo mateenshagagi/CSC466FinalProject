@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 public class DBScan {
@@ -8,6 +9,7 @@ public class DBScan {
     final int minPoints;
     HashSet<Point> visited;
     ArrayList<Cluster> clusters;
+    HashSet<Point> noisePoints;
 
     DBScan(ArrayList<Point> points, double epsilon, int minPoints) {
         this.points = points;
@@ -15,39 +17,55 @@ public class DBScan {
         this.minPoints = minPoints;
         this.visited = new HashSet<>();
         this.clusters = new ArrayList<>();
+        this.noisePoints = new HashSet<>();
     }
 
-    public ArrayList<Cluster> findClusters() {
+    public void findClusters() {
         for (Point point : points) {
-            if (!isVisited(point)) {
-                explore(point, true);
+            if (isVisited(point)) {
+                continue;
+            }
+            if (isCorePoint(point)) {
+                Cluster cluster = new Cluster();
+                explore(point, cluster);
+                clusters.add(cluster);
             }
         }
 
-        return clusters;
+        for (Point point : points) {
+            boolean inCluster = false;
+            for (Cluster cluster : clusters) {
+                if (cluster.getCluster().contains(point)) {
+                    inCluster = true;
+                    break;
+                }
+            }
+            if (!inCluster) {
+                noisePoints.add(point);
+            }
+        }
     }
 
     boolean isVisited(Point point) {
         return visited.contains(point);
     }
 
-    void explore(Point point, boolean addCluster) {
+    void explore(Point point, Cluster cluster) {
         visited.add(point);
-        ArrayList<Point> neighbors = findNeighbors(point);
-        if (isCorePoint(point)) {
 
-            if (addCluster) {
-                Cluster cluster = new Cluster(neighbors);
-                cluster.add(point);
-                clusters.add(cluster);
+        cluster.add(point);
+
+        ArrayList<Point> neighbors = findNeighbors(point);
+        for (Point neighbor : neighbors) {
+            if (isVisited(neighbor)) {
+                continue;
             }
 
-            for (Point neighbor : neighbors) {
-                if (isCorePoint(neighbor) && !isVisited(neighbor)) {
-                    explore(neighbor, false);
-                } else {
-                    visited.add(neighbor);
-                }
+            if (isCorePoint(neighbor)) {
+                explore(neighbor, cluster);
+            } else if (!cluster.getCluster().contains(neighbor)) {
+                visited.add(neighbor);
+                cluster.add(neighbor);
             }
         }
     }
@@ -82,6 +100,11 @@ public class DBScan {
     }
 
     void saveClustersToCSV(String filename) {
+        if (clusters.isEmpty()) {
+            System.out.println("Clusters is empty, not writing to file " + filename);
+            return;
+        }
+
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
             int numFeatures = clusters.get(0).get(0).size();
 
@@ -113,9 +136,65 @@ public class DBScan {
                 }
             }
 
+            for (Point noisePoint : noisePoints) {
+                StringBuilder row = new StringBuilder();
+                for (int i = 0; i < noisePoint.size(); i++) {
+                    row.append(noisePoint.get(i));
+                    if (i < noisePoint.size() - 1) {
+                        row.append(",");
+                    }
+                }
+                row.append(",").append(clusters.size());
+                bw.write(row.toString());
+                bw.newLine();
+            }
+
             System.out.println("Wrote " + filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public double evaluate() {
+        double evaluation = 0;
+
+        for (Cluster cluster : clusters) {
+            int numFeatures = cluster.get(0).size();
+
+            for (int i = 0; i < numFeatures; i++) {
+                ArrayList<Double> feature = new ArrayList<>();
+                for (Point point : cluster.getCluster()) {
+                    feature.add(point.get(0));
+                }
+
+                Collections.sort(feature);
+
+                double maxDistance = 0;
+                for (int j = 0; j < feature.size() - 1; j++) {
+                    int next = j + 1;
+                    double difference = Math.abs(feature.get(next) - feature.get(j));
+                    if (difference > maxDistance) {
+                        maxDistance = difference;
+                    }
+                }
+
+                evaluation += maxDistance;
+            }
+        }
+
+        return evaluation / clusters.size();
+    }
+
+    void printClustersInfo() {
+        System.out.println("Number of clusters: " + clusters.size());
+
+        int numPoints = 0;
+        for (Cluster cluster : clusters) {
+            numPoints += cluster.getCluster().size();
+        }
+        System.out.println("Total number of points: " + points.size());
+        System.out.println("Total number of points in clusters: " + numPoints);
+
+        System.out.println("Number of noise points: " + noisePoints.size());
     }
 }

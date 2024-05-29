@@ -1,6 +1,7 @@
 import matplotlib.pyplot
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
 
 import plotly.express as px
 
@@ -23,12 +24,13 @@ def read_and_plot_clusters(filename):
     cluster_column = df.columns[-1]
     
     clusters = df[cluster_column].unique()
+    max_cluster = max(clusters)
     
     colors = matplotlib.pyplot.get_cmap('viridis', len(clusters))
     
     for cluster in clusters:
       cluster_data = df[df[cluster_column] == cluster]
-      plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster), label=f'Cluster {cluster}')
+      plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster), label=f'Cluster {cluster}' if cluster != max_cluster else "Noise")
     
     plt.title('Clusters')
     plt.xlabel('Feature 1')
@@ -38,5 +40,7 @@ def read_and_plot_clusters(filename):
 
 
 if __name__ == '__main__':
-  filename = 'customers_clusters.csv'
-  plot3d(filename)
+  if (sys.argv[2] == "3d"):
+    plot3d(sys.argv[1])
+  else:
+    read_and_plot_clusters(sys.argv[1])
