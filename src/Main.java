@@ -5,15 +5,15 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        ArrayList<ArrayList<Double>> points = parseDataset("src/dataset.csv");
+        ArrayList<Point> points = parseDataset("src/dataset.csv");
 
         DBScan dbScan = new DBScan(points, 0.3, 10);
         dbScan.findClusters();
         dbScan.saveClustersToCSV("src/clusters.csv");
     }
 
-    public static ArrayList<ArrayList<Double>> parseDataset(String filename) {
-        ArrayList<ArrayList<Double>> points = new ArrayList<>();
+    public static ArrayList<Point> parseDataset(String filename) {
+        ArrayList<Point> points = new ArrayList<>();
         
         try {
             File file = new File(filename);
@@ -22,7 +22,7 @@ public class Main {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 String[] values = line.split(",");
-                ArrayList<Double> point = new ArrayList<>();
+                Point point = new Point();
                 for (String value : values) {
                     point.add(Double.parseDouble(value.trim()));
                 }

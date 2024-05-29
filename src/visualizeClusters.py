@@ -1,3 +1,4 @@
+import matplotlib.pyplot
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -10,7 +11,7 @@ def read_and_plot_clusters(filename):
     
     clusters = df[cluster_column].unique()
     
-    colors = plt.cm.get_cmap('viridis', len(clusters))
+    colors = matplotlib.pyplot.get_cmap('viridis', len(clusters))
     
     for cluster in clusters:
       cluster_data = df[df[cluster_column] == cluster]

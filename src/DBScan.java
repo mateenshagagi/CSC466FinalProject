@@ -3,13 +3,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class DBScan {
-    final ArrayList<ArrayList<Double>> points;
+    final ArrayList<Point> points;
     final double epsilon;
     final int minPoints;
-    HashSet<ArrayList<Double>> visited;
-    ArrayList<ArrayList<ArrayList<Double>>> clusters;
+    HashSet<Point> visited;
+    ArrayList<Cluster> clusters;
 
-    DBScan(ArrayList<ArrayList<Double>> points, double epsilon, int minPoints) {
+    DBScan(ArrayList<Point> points, double epsilon, int minPoints) {
         this.points = points;
         this.epsilon = epsilon;
         this.minPoints = minPoints;
@@ -17,8 +17,8 @@ public class DBScan {
         this.clusters = new ArrayList<>();
     }
 
-    public ArrayList<ArrayList<ArrayList<Double>>> findClusters() {
-        for (ArrayList<Double> point : points) {
+    public ArrayList<Cluster> findClusters() {
+        for (Point point : points) {
             if (!isVisited(point)) {
                 explore(point, true);
             }
@@ -27,22 +27,22 @@ public class DBScan {
         return clusters;
     }
 
-    boolean isVisited(ArrayList<Double> point) {
+    boolean isVisited(Point point) {
         return visited.contains(point);
     }
 
-    void explore(ArrayList<Double> point, boolean addCluster) {
+    void explore(Point point, boolean addCluster) {
         visited.add(point);
-        ArrayList<ArrayList<Double>> neighbors = findNeighbors(point);
+        ArrayList<Point> neighbors = findNeighbors(point);
         if (isCorePoint(point)) {
 
             if (addCluster) {
-                ArrayList<ArrayList<Double>> cluster = new ArrayList<>(neighbors);
+                Cluster cluster = new Cluster(neighbors);
                 cluster.add(point);
                 clusters.add(cluster);
             }
 
-            for (ArrayList<Double> neighbor : neighbors) {
+            for (Point neighbor : neighbors) {
                 if (isCorePoint(neighbor) && !isVisited(neighbor)) {
                     explore(neighbor, false);
                 } else {
@@ -52,14 +52,14 @@ public class DBScan {
         }
     }
 
-    boolean isCorePoint(ArrayList<Double> point) {
-        ArrayList<ArrayList<Double>> neighbors = findNeighbors(point);
+    boolean isCorePoint(Point point) {
+        ArrayList<Point> neighbors = findNeighbors(point);
         return neighbors.size() >= minPoints - 1;
     }
 
-    ArrayList<ArrayList<Double>> findNeighbors(ArrayList<Double> point) {
-        ArrayList<ArrayList<Double>> neighbors = new ArrayList<>();
-        for (ArrayList<Double> potentialNeighbor : points) {
+    ArrayList<Point> findNeighbors(Point point) {
+        ArrayList<Point> neighbors = new ArrayList<>();
+        for (Point potentialNeighbor : points) {
             double dist = getL2Norm(point, potentialNeighbor);
             if (dist <= epsilon && !point.equals(potentialNeighbor)) {
                 neighbors.add(potentialNeighbor);
@@ -69,7 +69,7 @@ public class DBScan {
         return neighbors;
     }
 
-    double getL2Norm(ArrayList<Double> point1, ArrayList<Double> point2) {
+    double getL2Norm(Point point1, Point point2) {
         int length = point1.size();
         double L2Norm = 0;
         for (int i = 0; i < length; i++) {
@@ -97,9 +97,9 @@ public class DBScan {
             bw.newLine();
 
             for (int clusterIndex = 0; clusterIndex < clusters.size(); clusterIndex++) {
-                ArrayList<ArrayList<Double>> cluster = clusters.get(clusterIndex);
+                Cluster cluster = clusters.get(clusterIndex);
 
-                for (ArrayList<Double> point : cluster) {
+                for (Point point : cluster.getCluster()) {
                     StringBuilder row = new StringBuilder();
                     for (int i = 0; i < point.size(); i++) {
                         row.append(point.get(i));
