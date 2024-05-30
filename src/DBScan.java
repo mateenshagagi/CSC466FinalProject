@@ -1,53 +1,69 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 
 public class DBScan {
     final ArrayList<Point> points;
+    final ArrayList<Point> normalizedPoints;
     final double epsilon;
     final int minPoints;
     HashSet<Point> visited;
     ArrayList<Cluster> clusters;
-    HashSet<Point> noisePoints;
+    HashSet<Point> normalizedNoisePoints;
 
     DBScan(ArrayList<Point> points, double epsilon, int minPoints) {
         this.points = points;
+        this.normalizedPoints = new ArrayList<>();
+        normalize();
         this.epsilon = epsilon;
         this.minPoints = minPoints;
         this.visited = new HashSet<>();
         this.clusters = new ArrayList<>();
-        this.noisePoints = new HashSet<>();
+        this.normalizedNoisePoints = new HashSet<>();
     }
 
     public void findClusters() {
-        for (Point point : points) {
-            if (isVisited(point)) {
+        for (Point normalizedPoint : normalizedPoints) {
+            if (isVisited(normalizedPoint)) {
                 continue;
             }
-            if (isCorePoint(point)) {
+            if (isCorePoint(normalizedPoint)) {
                 Cluster cluster = new Cluster();
-                explore(point, cluster);
+                explore(normalizedPoint, cluster);
                 clusters.add(cluster);
             }
         }
 
-        for (Point point : points) {
+        for (Point normalizedPoint : normalizedPoints) {
             boolean inCluster = false;
             for (Cluster cluster : clusters) {
-                if (cluster.getCluster().contains(point)) {
+                if (cluster.getCluster().contains(normalizedPoint)) {
                     inCluster = true;
                     break;
                 }
             }
             if (!inCluster) {
-                noisePoints.add(point);
+                normalizedNoisePoints.add(normalizedPoint);
             }
         }
     }
 
     boolean isVisited(Point point) {
         return visited.contains(point);
+    }
+
+    void normalize() {
+        for (Point point : points) {
+            Point normalizedPoint = new Point();
+            for (int featureIdx = 0; featureIdx < point.size(); featureIdx++) {
+                int finalFeatureIdx = featureIdx;
+                double max = points.stream().mapToDouble(p -> p.get(finalFeatureIdx)).max().orElse(0);
+                double min = points.stream().mapToDouble(p -> p.get(finalFeatureIdx)).min().orElse(0);
+                normalizedPoint.add(max == min ? 0 : (point.get(featureIdx) - min) / (max - min));
+            }
+
+            normalizedPoints.add(normalizedPoint);
+        }
     }
 
     void explore(Point point, Cluster cluster) {
@@ -77,7 +93,7 @@ public class DBScan {
 
     ArrayList<Point> findNeighbors(Point point) {
         ArrayList<Point> neighbors = new ArrayList<>();
-        for (Point potentialNeighbor : points) {
+        for (Point potentialNeighbor : normalizedPoints) {
             double dist = getL2Norm(point, potentialNeighbor);
             if (dist <= epsilon && !point.equals(potentialNeighbor)) {
                 neighbors.add(potentialNeighbor);
@@ -122,7 +138,9 @@ public class DBScan {
             for (int clusterIndex = 0; clusterIndex < clusters.size(); clusterIndex++) {
                 Cluster cluster = clusters.get(clusterIndex);
 
-                for (Point point : cluster.getCluster()) {
+                for (Point normalizedPoint : cluster.getCluster()) {
+                    int pointIndex = normalizedPoints.indexOf(normalizedPoint);
+                    Point point = points.get(pointIndex);
                     StringBuilder row = new StringBuilder();
                     for (int i = 0; i < point.size(); i++) {
                         row.append(point.get(i));
@@ -136,18 +154,8 @@ public class DBScan {
                 }
             }
 
-            for (Point noisePoint : noisePoints) {
-                StringBuilder row = new StringBuilder();
-                for (int i = 0; i < noisePoint.size(); i++) {
-                    row.append(noisePoint.get(i));
-                    if (i < noisePoint.size() - 1) {
-                        row.append(",");
-                    }
-                }
-                row.append(",").append(clusters.size());
-                bw.write(row.toString());
-                bw.newLine();
-            }
+            /*
+            }*/
 
             System.out.println("Wrote " + filename);
         } catch (IOException e) {
@@ -155,37 +163,89 @@ public class DBScan {
         }
     }
 
+    void saveToCSV(String filename) {
+        saveClustersToCSV(filename);
+        String baseName = filename.substring(0, filename.lastIndexOf('.'));
+        String noiseFilename = baseName + "_noise.csv";
+        saveNoisePointsToCSV(noiseFilename);
+    }
+
+    void saveNoisePointsToCSV(String filename) {
+        if (normalizedNoisePoints.isEmpty()) {
+            System.out.println("No noise points, not writing to file " + filename);
+        }
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
+            int numFeatures = clusters.get(0).get(0).size();
+
+            StringBuilder header = new StringBuilder();
+            for (int featureNum = 1; featureNum <= numFeatures; featureNum++) {
+                header.append("feature").append(featureNum);
+                if (featureNum < numFeatures) {
+                    header.append(",");
+                }
+            }
+            bw.write(header.toString());
+            bw.newLine();
+
+            for (Point normalizedNoisePoint : normalizedNoisePoints) {
+                StringBuilder row = new StringBuilder();
+                int pointIndex = normalizedPoints.indexOf(normalizedNoisePoint);
+                Point point = points.get(pointIndex);
+                for (int i = 0; i < point.size(); i++) {
+                    row.append(point.get(i));
+                    if (i < point.size() - 1) {
+                        row.append(",");
+                    }
+                }
+                row.append(",").append(clusters.size());
+                bw.write(row.toString());
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public double evaluate() {
-        double evaluation = 0;
+        if (clusters.size() <= 1) {
+            return 0;
+        }
+
+        double totalSilhouetteScore = 0;
 
         for (Cluster cluster : clusters) {
-            int numFeatures = cluster.get(0).size();
+            for (Point point : cluster.getCluster()) {
+                double sumDistToOtherPointsInCluster = 0;
+                for (Point otherPoint : cluster.getCluster()) {
+                    if (point.equals(otherPoint)) continue;
 
-            for (int i = 0; i < numFeatures; i++) {
-                ArrayList<Double> feature = new ArrayList<>();
-                for (Point point : cluster.getCluster()) {
-                    feature.add(point.get(i));
+                    sumDistToOtherPointsInCluster += getL2Norm(point, otherPoint);
                 }
+                double avgDistToOtherPointsInCluster = sumDistToOtherPointsInCluster / cluster.getCluster().size();
 
-                double featureSum = feature.stream().mapToDouble(f -> f).sum();
-                feature.replaceAll(f -> f / featureSum);
+                double minAvgDistToOtherClusters = Double.MAX_VALUE;
+                for (Cluster otherCluster : clusters) {
+                    if (otherCluster.equals(cluster)) continue;
 
-                Collections.sort(feature);
-
-                double maxDistance = 0;
-                for (int j = 0; j < feature.size() - 1; j++) {
-                    int next = j + 1;
-                    double difference = Math.abs(feature.get(next) - feature.get(j));
-                    if (difference > maxDistance) {
-                        maxDistance = difference;
+                    double sumDistToOtherClusterPoints = 0;
+                    for (Point otherClusterPoint : otherCluster.getCluster()) {
+                        sumDistToOtherClusterPoints += getL2Norm(point, otherClusterPoint);
+                    }
+                    double avgDistToOtherClusterPoints = sumDistToOtherClusterPoints / otherCluster.getCluster().size();
+                    if (avgDistToOtherClusterPoints < minAvgDistToOtherClusters) {
+                        minAvgDistToOtherClusters = avgDistToOtherClusterPoints;
                     }
                 }
 
-                evaluation += maxDistance / cluster.getCluster().size();
+                double silhouetteScore = (minAvgDistToOtherClusters - avgDistToOtherPointsInCluster) / Math.max(avgDistToOtherPointsInCluster, minAvgDistToOtherClusters);
+                totalSilhouetteScore += silhouetteScore;
             }
         }
 
-        return evaluation;
+        int totalPoints = clusters.stream().mapToInt(c -> c.getCluster().size()).sum();
+        int numNoisePoints = normalizedNoisePoints.size();
+
+        return (totalSilhouetteScore / totalPoints) - 1 * ((double) numNoisePoints / points.size());
     }
 
     void printClustersInfo() {
@@ -198,6 +258,6 @@ public class DBScan {
         System.out.println("Total number of points: " + points.size());
         System.out.println("Total number of points in clusters: " + numPoints);
 
-        System.out.println("Number of noise points: " + noisePoints.size());
+        System.out.println("Number of noise points: " + normalizedNoisePoints.size());
     }
 }

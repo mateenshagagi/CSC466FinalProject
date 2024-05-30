@@ -8,23 +8,17 @@ public class Main {
         String filename = "src/Mall_Customers.csv";
         ArrayList<Point> points = parseDataset(filename, true, true);
 
-        /*DBScan dbScan = new DBScan(points, 0.3, 10);
-        dbScan.findClusters();
-        dbScan.printClustersInfo();
-        dbScan.evaluate();
-        dbScan.saveClustersToCSV("src/clusters.csv");*/
-
-        /*double bestEvaluation = 99999999;
+        double bestEvaluation = 0;
         DBScan bestDBScan = null;
 
-        for (double epsilon = 0.1; epsilon < 1; epsilon += 0.1) {
-            for (int minPoints = 3; minPoints < 20; minPoints += 1) {
-                DBScan curdbScan = new DBScan(points, epsilon, minPoints);
-                curdbScan.findClusters();
-                double evaluation = curdbScan.evaluate();
-                if (evaluation < bestEvaluation && !curdbScan.clusters.isEmpty()) {
+        for (double epsilon = 0.01; epsilon <= 1.0; epsilon += 0.01) {
+            for (int minPoints = 3; minPoints <= 10; minPoints += 1) {
+                DBScan dbScan = new DBScan(points, epsilon, minPoints);
+                dbScan.findClusters();
+                double evaluation = dbScan.evaluate();
+                if (evaluation > bestEvaluation) {
                     bestEvaluation = evaluation;
-                    bestDBScan = curdbScan;
+                    bestDBScan = dbScan;
                 }
             }
         }
@@ -32,15 +26,10 @@ public class Main {
         if (bestDBScan != null) {
             System.out.println("Epsilon: " + bestDBScan.epsilon);
             System.out.println("Min points: " + bestDBScan.minPoints);
-            System.out.println(bestEvaluation);
+            System.out.println("Evaluation: " + bestEvaluation);
             bestDBScan.printClustersInfo();
-            bestDBScan.saveClustersToCSV("src/clusters.csv");
-        }*/
-
-        DBScan dbScan = new DBScan(points, 15, 3);
-        dbScan.findClusters();
-        dbScan.printClustersInfo();
-        dbScan.saveClustersToCSV("src/customers_clusters.csv");
+            bestDBScan.saveToCSV("src/customers_clusters.csv");
+        }
     }
 
     public static ArrayList<Point> parseDataset(String filename, boolean header, boolean index) {
