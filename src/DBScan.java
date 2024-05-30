@@ -164,8 +164,11 @@ public class DBScan {
             for (int i = 0; i < numFeatures; i++) {
                 ArrayList<Double> feature = new ArrayList<>();
                 for (Point point : cluster.getCluster()) {
-                    feature.add(point.get(0));
+                    feature.add(point.get(i));
                 }
+
+                double featureSum = feature.stream().mapToDouble(f -> f).sum();
+                feature.replaceAll(f -> f / featureSum);
 
                 Collections.sort(feature);
 
@@ -178,11 +181,11 @@ public class DBScan {
                     }
                 }
 
-                evaluation += maxDistance;
+                evaluation += maxDistance / cluster.getCluster().size();
             }
         }
 
-        return evaluation / clusters.size();
+        return evaluation;
     }
 
     void printClustersInfo() {

@@ -40,7 +40,7 @@ def read_and_plot_clusters(filename):
 
 
 if __name__ == '__main__':
-  if (sys.argv[2] == "3d"):
+  if (len(sys.argv) > 2 and sys.argv[2] == "3d"):
     plot3d(sys.argv[1])
   else:
     read_and_plot_clusters(sys.argv[1])
