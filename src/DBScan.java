@@ -57,9 +57,14 @@ public class DBScan {
             Point normalizedPoint = new Point();
             for (int featureIdx = 0; featureIdx < point.size(); featureIdx++) {
                 int finalFeatureIdx = featureIdx;
-                double max = points.stream().mapToDouble(p -> p.get(finalFeatureIdx)).max().orElse(0);
-                double min = points.stream().mapToDouble(p -> p.get(finalFeatureIdx)).min().orElse(0);
-                normalizedPoint.add(max == min ? 0 : (point.get(featureIdx) - min) / (max - min));
+                double mean = points.stream().mapToDouble(p -> p.get(finalFeatureIdx)).sum() / points.size();
+                double standard_dev = 0;
+                for (Point pt : points) {
+                    standard_dev += Math.pow((pt.get(featureIdx) - mean), 2);
+                }
+                standard_dev /= points.size();
+                standard_dev = Math.sqrt(standard_dev);
+                normalizedPoint.add((point.get(featureIdx) - mean) / standard_dev);
             }
 
             normalizedPoints.add(normalizedPoint);
@@ -154,9 +159,6 @@ public class DBScan {
                 }
             }
 
-            /*
-            }*/
-
             System.out.println("Wrote " + filename);
         } catch (IOException e) {
             e.printStackTrace();
@@ -245,7 +247,7 @@ public class DBScan {
         int totalPoints = clusters.stream().mapToInt(c -> c.getCluster().size()).sum();
         int numNoisePoints = normalizedNoisePoints.size();
 
-        return (totalSilhouetteScore / totalPoints) - 1 * ((double) numNoisePoints / points.size());
+        return (totalSilhouetteScore / totalPoints) - 0 * ((double) numNoisePoints / points.size());
     }
 
     void printClustersInfo() {

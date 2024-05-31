@@ -5,10 +5,10 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        String filename = "src/Mall_Customers.csv";
-        ArrayList<Point> points = parseDataset(filename, true, true);
+        String filename = "src/moons_dataset.csv";
+        ArrayList<Point> points = parseDataset(filename, false, false);
 
-        double bestEvaluation = 0;
+        /*double bestEvaluation = 0;
         DBScan bestDBScan = null;
 
         for (double epsilon = 0.01; epsilon <= 1.0; epsilon += 0.01) {
@@ -28,8 +28,15 @@ public class Main {
             System.out.println("Min points: " + bestDBScan.minPoints);
             System.out.println("Evaluation: " + bestEvaluation);
             bestDBScan.printClustersInfo();
-            bestDBScan.saveToCSV("src/customers_clusters.csv");
-        }
+            bestDBScan.saveToCSV("src/circles_clusters.csv");
+        }*/
+
+        DBScan dbScan = new DBScan(points, 0.3, 4);
+        dbScan.findClusters();
+        dbScan.printClustersInfo();
+        double evaluation = dbScan.evaluate();
+        System.out.println(evaluation);
+        dbScan.saveToCSV("src/moons_clusters.csv");
     }
 
     public static ArrayList<Point> parseDataset(String filename, boolean header, boolean index) {
