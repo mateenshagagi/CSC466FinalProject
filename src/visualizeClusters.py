@@ -28,7 +28,8 @@ def read_and_plot_clusters(filename):
 
     for cluster in clusters:
       cluster_data = df[df[cluster_column] == cluster]
-      plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster), label=f'Cluster {cluster}')
+      plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster))
+      #plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster), label=f'Cluster {cluster}')
     
     plt.title('Clusters')
     plt.xlabel('Feature 1')
