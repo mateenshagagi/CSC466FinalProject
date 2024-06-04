@@ -1,0 +1,6 @@
+Task, Who did it, description, time spent
+
+DBSCAN Java Class, Daniel, a custom Java class that handles the entire logic and algorithm for DBSCAN, 3 hours
+Point+Cluster Class, Mateen, classes to hold the data, 10 min
+Graphing, Mateen, created graphs to visualize cluster assignments and compare to correct assignment, 3 hours
+DBSCAN Evaluator, Daniel, created an algorithm for fine tuning hyperparemeters, 1.5 hours
