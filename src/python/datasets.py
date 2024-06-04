@@ -124,12 +124,12 @@ COLORS = ["#377eb8",
         "#000000"]
 
 dmscan_data = [
-    ("circles_clusters.csv", [-1.5,1.5], [-1.5,1.5]),
-    ("moons_clusters.csv", [-1.5,2.5], [-1,1.5]),
-    ("varied_clusters.csv", [0,12], [-9.5,1]),
-    ("aniso_clusters.csv", [-5.5,3], [-3, 5.5]),
-    ("blobs_clusters.csv", [0.3,12.5], [-9.7, 0.3]),
-    ("no_structures_clusters.csv", [-0.25,1.25], [-0.25,1.25])
+    ("../results/circles.csv", [-1.5,1.5], [-1.5,1.5]),
+    ("../results/moons.csv", [-1.5,2.5], [-1,1.5]),
+    ("../results/varied.csv", [0,12], [-9.5,1]),
+    ("../results/aniso.csv", [-5.5,3], [-3, 5.5]),
+    ("../results/blobs.csv", [0.3,12.5], [-9.7, 0.3]),
+    ("../dmscan_data/no_structures_clusters.csv", [-0.25,1.25], [-0.25,1.25])
 ]
 
 print(dmscan_data[0][1][0])
@@ -229,7 +229,7 @@ for i_dataset, (dataset, algo_params) in enumerate(datasets):
             if i_dataset == 0:
                 plt.title(name, size=18)
 
-            df = pd.read_csv(f"dmscan_data/{dmscan_data[dmscan_index][0]}")
+            df = pd.read_csv(f"{dmscan_data[dmscan_index][0]}")
             feature_columns = df.columns[:-1]
             cluster_column = df.columns[-1]
             clusters = df[cluster_column].unique()
