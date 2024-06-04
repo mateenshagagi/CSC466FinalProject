@@ -30,10 +30,13 @@ def read_and_plot_clusters(filename):
       cluster_data = df[df[cluster_column] == cluster]
       plt.scatter(cluster_data[feature_columns[0]], cluster_data[feature_columns[1]], color=colors(cluster), label=f'Cluster {cluster}')
     
-    noise_df = pd.read_csv(pathlib.Path(filename).with_name(pathlib.Path(filename).stem + "_noise.csv"))
-    noise_df_feature_columns = noise_df.columns
-    if (len(noise_df) > 0):
-      plt.scatter(noise_df[noise_df_feature_columns[0]], noise_df[noise_df_feature_columns[1]], color="black", label="Noise")
+    try:
+      noise_df = pd.read_csv(pathlib.Path(filename).with_name(pathlib.Path(filename).stem + "_noise.csv"))
+      noise_df_feature_columns = noise_df.columns
+      if (len(noise_df) > 0):
+        plt.scatter(noise_df[noise_df_feature_columns[0]], noise_df[noise_df_feature_columns[1]], color="black", label="Noise")
+    except FileNotFoundError:
+      pass
     
     plt.title('Clusters')
     plt.xlabel('Feature 1')

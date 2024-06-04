@@ -115,7 +115,7 @@ public class DBScan {
         return neighbors;
     }
 
-    double log2(int n) {
+    double log2(double n) {
         if (n == 0) {
             return 0;
         }
@@ -283,7 +283,6 @@ public class DBScan {
         ArrayList<Cluster> clusters = new ArrayList<>();
 
         int numPoints = this.clusters.stream().mapToInt(cluster -> cluster.getCluster().size()).sum();
-
         for (Cluster normalizedCluster : this.clusters) {
             Cluster cluster = new Cluster();
             for (Point normalizedPoint : normalizedCluster.getCluster()) {
@@ -311,7 +310,8 @@ public class DBScan {
             }
 
             for (Cluster key : clusterCounts.keySet()) {
-                clusterEntropy += (double) -clusterCounts.get(key) / cluster.getCluster().size() * log2(clusterCounts.get(key) / cluster.getCluster().size());
+                int count = clusterCounts.get(key);
+                clusterEntropy += -((double) count / cluster.getCluster().size()) * log2((double) count / cluster.getCluster().size());
             }
 
             entropy += ((double) cluster.getCluster().size() / numPoints) * clusterEntropy;
@@ -358,5 +358,12 @@ public class DBScan {
         }
 
         return purity;
+    }
+
+    public void printEntropyAndPurity(ArrayList<Cluster> correctClusters) {
+        double entropy = this.calculateEntropy(correctClusters);
+        double purity = this.calculatePurity(correctClusters);
+        System.out.println("Entropy: " + entropy);
+        System.out.println("Purity: " + purity);
     }
 }

@@ -1,5 +1,6 @@
 from sklearn import datasets
 import pandas as pd
+import numpy as np
 
 n_samples = 500
 seed = 30
@@ -59,9 +60,8 @@ df.to_csv('blobs_correct.csv', index=False)
 
 rng = np.random.RandomState(seed)
 no_structure = rng.rand(n_samples, 2), None
-data = (pd.DataFrame(no_structure[0]))
-data.to_csv('no_structures_dataset.csv', index=False, header=False)
-categories = (pd.DataFrame(no_structure[1]))
-df = pd.concat([data, categories], axis=1)
-df.columns = ["x", "y", "cluster"]
-df.to_csv('no_structure_correct.csv', index=False)
+data = pd.DataFrame(no_structure[0])
+data.to_csv('no_structure_dataset.csv', index=False, header=False)
+data["cluster"] = 0
+data.columns = ["x", "y", "cluster"]
+data.to_csv('no_structure_correct.csv', index=False)

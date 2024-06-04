@@ -13,7 +13,7 @@ public class Main {
         ArrayList<String> headers = header ? getHeader(filename) : new ArrayList<>();
 
         String correctClustersFilename = "src/datasets_correct/circles.csv";
-        ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename);
+        ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename, false);
 
         DBScan dbScan = new DBScan(points, 0.3, 4, headers);
         dbScan.findClusters();
@@ -44,7 +44,12 @@ public class Main {
             System.out.println("Min points: " + bestDBScan.minPoints);
             System.out.println("Evaluation: " + bestEvaluation);
             bestDBScan.printClustersInfo();
-            bestDBScan.saveToCSV("src/circles_clusters.csv");
+
+            String correctClustersFilename = "src/datasets_correct/no_structure.csv";
+            ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename, false);
+            bestDBScan.printEntropyAndPurity(correctClusters);
+
+            bestDBScan.saveToCSV("no_structure.csv");
         }*/
     }
 
@@ -102,12 +107,16 @@ public class Main {
     }
 
     /* Assumes clusters is the last column */
-    public static ArrayList<Cluster> parseCorrectDataset(String filename) {
+    public static ArrayList<Cluster> parseCorrectDataset(String filename, boolean header) {
         HashMap<Integer, Cluster> clustersMap = new HashMap<>();
 
         try {
             File file = new File(filename);
             Scanner scanner = new Scanner(file);
+
+            if (header) {
+                scanner.nextLine();
+            }
 
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
