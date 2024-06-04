@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class DBScan {
@@ -10,8 +11,9 @@ public class DBScan {
     HashSet<Point> visited;
     ArrayList<Cluster> clusters;
     HashSet<Point> normalizedNoisePoints;
+    ArrayList<String> headers;
 
-    DBScan(ArrayList<Point> points, double epsilon, int minPoints) {
+    DBScan(ArrayList<Point> points, double epsilon, int minPoints, ArrayList<String> headers) {
         this.points = points;
         this.normalizedPoints = new ArrayList<>();
         normalize();
@@ -20,6 +22,11 @@ public class DBScan {
         this.visited = new HashSet<>();
         this.clusters = new ArrayList<>();
         this.normalizedNoisePoints = new HashSet<>();
+        this.headers = headers;
+    }
+
+    DBScan(ArrayList<Point> points, double epsilon, int minPoints) {
+        this(points, epsilon, minPoints, new ArrayList<>());
     }
 
     public void findClusters() {
@@ -108,6 +115,13 @@ public class DBScan {
         return neighbors;
     }
 
+    double log2(int n) {
+        if (n == 0) {
+            return 0;
+        }
+        return Math.log(n) / Math.log(2);
+    }
+
     double getL2Norm(Point point1, Point point2) {
         int length = point1.size();
         double L2Norm = 0;
@@ -121,17 +135,16 @@ public class DBScan {
     }
 
     void saveClustersToCSV(String filename) {
-        if (clusters.isEmpty()) {
-            System.out.println("Clusters is empty, not writing to file " + filename);
-            return;
-        }
-
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
             int numFeatures = clusters.get(0).get(0).size();
 
             StringBuilder header = new StringBuilder();
             for (int featureNum = 1; featureNum <= numFeatures; featureNum++) {
-                header.append("feature").append(featureNum);
+                if (headers.isEmpty()) {
+                    header.append("feature").append(featureNum);
+                } else {
+                    header.append(headers.get(featureNum - 1));
+                }
                 if (featureNum < numFeatures) {
                     header.append(",");
                 }
@@ -166,22 +179,23 @@ public class DBScan {
     }
 
     void saveToCSV(String filename) {
-        saveClustersToCSV(filename);
         String baseName = filename.substring(0, filename.lastIndexOf('.'));
-        String noiseFilename = baseName + "_noise.csv";
+        saveClustersToCSV("src/results/" + baseName + ".csv");
+        String noiseFilename = "src/results/" + baseName + "_noise.csv";
         saveNoisePointsToCSV(noiseFilename);
     }
 
     void saveNoisePointsToCSV(String filename) {
-        if (normalizedNoisePoints.isEmpty()) {
-            System.out.println("No noise points, not writing to file " + filename);
-        }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
-            int numFeatures = clusters.get(0).get(0).size();
+            int numFeatures = points.get(0).size();
 
             StringBuilder header = new StringBuilder();
             for (int featureNum = 1; featureNum <= numFeatures; featureNum++) {
-                header.append("feature").append(featureNum);
+                if (headers.isEmpty()) {
+                    header.append("feature").append(featureNum);
+                } else {
+                    header.append(headers.get(featureNum - 1));
+                }
                 if (featureNum < numFeatures) {
                     header.append(",");
                 }
@@ -199,10 +213,11 @@ public class DBScan {
                         row.append(",");
                     }
                 }
-                row.append(",").append(clusters.size());
                 bw.write(row.toString());
                 bw.newLine();
             }
+
+            System.out.println("Wrote " + filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -247,7 +262,7 @@ public class DBScan {
         int totalPoints = clusters.stream().mapToInt(c -> c.getCluster().size()).sum();
         int numNoisePoints = normalizedNoisePoints.size();
 
-        return (totalSilhouetteScore / totalPoints) - 0 * ((double) numNoisePoints / points.size());
+        return (totalSilhouetteScore / totalPoints) - 1 * ((double) numNoisePoints / points.size());
     }
 
     void printClustersInfo() {
@@ -261,5 +276,87 @@ public class DBScan {
         System.out.println("Total number of points in clusters: " + numPoints);
 
         System.out.println("Number of noise points: " + normalizedNoisePoints.size());
+    }
+
+    public double calculateEntropy(ArrayList<Cluster> correctClusters) {
+        double entropy = 0.0;
+        ArrayList<Cluster> clusters = new ArrayList<>();
+
+        int numPoints = this.clusters.stream().mapToInt(cluster -> cluster.getCluster().size()).sum();
+
+        for (Cluster normalizedCluster : this.clusters) {
+            Cluster cluster = new Cluster();
+            for (Point normalizedPoint : normalizedCluster.getCluster()) {
+                int pointIndex = normalizedPoints.indexOf(normalizedPoint);
+                Point point = points.get(pointIndex);
+                cluster.add(point);
+            }
+            clusters.add(cluster);
+        }
+
+        for (Cluster cluster : clusters) {
+            double clusterEntropy = 0.0;
+            HashMap<Cluster, Integer> clusterCounts = new HashMap<>();
+            for (Cluster correctCluster : correctClusters) {
+                clusterCounts.put(correctCluster, 0);
+            }
+
+            for (Point point : cluster.getCluster()) {
+                for (Cluster correctCluster : correctClusters) {
+                    if (correctCluster.getCluster().contains(point)) {
+                        clusterCounts.put(correctCluster, clusterCounts.get(correctCluster) + 1);
+                        break;
+                    }
+                }
+            }
+
+            for (Cluster key : clusterCounts.keySet()) {
+                clusterEntropy += (double) -clusterCounts.get(key) / cluster.getCluster().size() * log2(clusterCounts.get(key) / cluster.getCluster().size());
+            }
+
+            entropy += ((double) cluster.getCluster().size() / numPoints) * clusterEntropy;
+        }
+
+        return entropy;
+    }
+
+    public double calculatePurity(ArrayList<Cluster> correctClusters) {
+        double purity = 0.0;
+        ArrayList<Cluster> clusters = new ArrayList<>();
+
+        int numPoints = this.clusters.stream().mapToInt(cluster -> cluster.getCluster().size()).sum();
+
+        for (Cluster normalizedCluster : this.clusters) {
+            Cluster cluster = new Cluster();
+            for (Point normalizedPoint : normalizedCluster.getCluster()) {
+                int pointIndex = normalizedPoints.indexOf(normalizedPoint);
+                Point point = points.get(pointIndex);
+                cluster.add(point);
+            }
+            clusters.add(cluster);
+        }
+
+        for (Cluster cluster : clusters) {
+            HashMap<Cluster, Integer> clusterCounts = new HashMap<>();
+            for (Cluster correctCluster : correctClusters) {
+                clusterCounts.put(correctCluster, 0);
+            }
+
+            for (Point point : cluster.getCluster()) {
+                for (Cluster correctCluster : correctClusters) {
+                    if (correctCluster.getCluster().contains(point)) {
+                        clusterCounts.put(correctCluster, clusterCounts.get(correctCluster) + 1);
+                        break;
+                    }
+                }
+            }
+
+            int max = clusterCounts.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+            double clusterPurity = (double) max / cluster.getCluster().size();
+
+            purity += ((double) cluster.getCluster().size() / numPoints) * clusterPurity;
+        }
+
+        return purity;
     }
 }

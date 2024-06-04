@@ -1,19 +1,6 @@
-import time
-import warnings
-from itertools import cycle, islice
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-from sklearn import cluster, datasets, mixture
-from sklearn.neighbors import kneighbors_graph
-from sklearn.preprocessing import StandardScaler
+from sklearn import datasets
 import pandas as pd
 
-# ============
-# Generate datasets. We choose the size big enough to see the scalability
-# of the algorithms, but not too big to avoid too long running times
-# ============
 n_samples = 500
 seed = 30
 noisy_circles = datasets.make_circles(

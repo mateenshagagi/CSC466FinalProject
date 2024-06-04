@@ -1,12 +1,28 @@
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        String filename = "src/moons_dataset.csv";
-        ArrayList<Point> points = parseDataset(filename, false, false);
+        String filename = "src/datasets/circles.csv";
+        boolean header = false;
+        ArrayList<Point> points = parseDataset(filename, header, false);
+        ArrayList<String> headers = header ? getHeader(filename) : new ArrayList<>();
+
+        String correctClustersFilename = "src/datasets_correct/circles.csv";
+        ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename);
+
+        DBScan dbScan = new DBScan(points, 0.3, 4, headers);
+        dbScan.findClusters();
+        dbScan.printClustersInfo();
+        double entropy = dbScan.calculateEntropy(correctClusters);
+        double purity = dbScan.calculatePurity(correctClusters);
+        System.out.println("Entropy: " + entropy);
+        System.out.println("Purity: " + purity);
+        dbScan.saveToCSV("circles.csv");
 
         /*double bestEvaluation = 0;
         DBScan bestDBScan = null;
@@ -30,13 +46,22 @@ public class Main {
             bestDBScan.printClustersInfo();
             bestDBScan.saveToCSV("src/circles_clusters.csv");
         }*/
+    }
 
-        DBScan dbScan = new DBScan(points, 0.3, 4);
-        dbScan.findClusters();
-        dbScan.printClustersInfo();
-        double evaluation = dbScan.evaluate();
-        System.out.println(evaluation);
-        dbScan.saveToCSV("src/moons_clusters.csv");
+    public static ArrayList<String> getHeader(String filename) {
+        ArrayList<String> header = new ArrayList<>();
+
+        try {
+            File file = new File(filename);
+            Scanner scanner = new Scanner(file);
+            String line = scanner.nextLine();
+            String[] headerList = line.split(",");
+            header.addAll(Arrays.asList(headerList));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return header;
     }
 
     public static ArrayList<Point> parseDataset(String filename, boolean header, boolean index) {
@@ -74,5 +99,41 @@ public class Main {
         }
 
         return points;
+    }
+
+    /* Assumes clusters is the last column */
+    public static ArrayList<Cluster> parseCorrectDataset(String filename) {
+        HashMap<Integer, Cluster> clustersMap = new HashMap<>();
+
+        try {
+            File file = new File(filename);
+            Scanner scanner = new Scanner(file);
+
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                String[] values = line.split(",");
+                Point point = new Point();
+
+                int clusterNum = 0;
+                for (int i = 0; i < values.length; i++) {
+                    String stringValue = values[i];
+                    if (i == values.length - 1) {
+                        clusterNum = Integer.parseInt(stringValue.trim());
+                    } else {
+                        point.add(Double.parseDouble(stringValue.trim()));
+                    }
+                }
+
+                if (!clustersMap.containsKey(clusterNum)) {
+                    clustersMap.put(clusterNum, new Cluster());
+                }
+
+                clustersMap.get(clusterNum).add(point);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new ArrayList<>(clustersMap.values());
     }
 }
