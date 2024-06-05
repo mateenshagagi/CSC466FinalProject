@@ -1,10 +1,4 @@
-import time
-import warnings
-from itertools import cycle, islice
-
 import matplotlib.pyplot as plt
-import matplotlib.pyplot
-import numpy as np
 import pandas as pd
 
 plt.figure(figsize=(8 * 2 + 1, 5))

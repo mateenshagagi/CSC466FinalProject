@@ -7,24 +7,15 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        String filename = "src/datasets/circles.csv";
+        getBestEvaluation();
+    }
+
+    public static void getBestEvaluation() {
+        String filename = "src/datasets/moons.csv";
         boolean header = false;
         ArrayList<Point> points = parseDataset(filename, header, false);
-        ArrayList<String> headers = header ? getHeader(filename) : new ArrayList<>();
 
-        String correctClustersFilename = "src/datasets_correct/circles.csv";
-        ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename, false);
-
-        DBScan dbScan = new DBScan(points, 0.3, 4, headers);
-        dbScan.findClusters();
-        dbScan.printClustersInfo();
-        double entropy = dbScan.calculateEntropy(correctClusters);
-        double purity = dbScan.calculatePurity(correctClusters);
-        System.out.println("Entropy: " + entropy);
-        System.out.println("Purity: " + purity);
-        dbScan.saveToCSV("circles.csv");
-
-        /*double bestEvaluation = 0;
+        double bestEvaluation = 0;
         DBScan bestDBScan = null;
 
         for (double epsilon = 0.01; epsilon <= 1.0; epsilon += 0.01) {
@@ -45,12 +36,12 @@ public class Main {
             System.out.println("Evaluation: " + bestEvaluation);
             bestDBScan.printClustersInfo();
 
-            String correctClustersFilename = "src/datasets_correct/no_structure.csv";
+            String correctClustersFilename = "src/datasets_correct/moons.csv";
             ArrayList<Cluster> correctClusters = parseCorrectDataset(correctClustersFilename, false);
             bestDBScan.printEntropyAndPurity(correctClusters);
 
-            bestDBScan.saveToCSV("no_structure.csv");
-        }*/
+            bestDBScan.saveToCSV("moons.csv");
+        }
     }
 
     public static ArrayList<String> getHeader(String filename) {
